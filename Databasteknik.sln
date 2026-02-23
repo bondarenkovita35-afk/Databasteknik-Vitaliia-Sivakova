@@ -1,0 +1,42 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Databasteknik.Domain", "Databasteknik.Domain\Databasteknik.Domain.csproj", "{8DCA56A1-3C20-4C99-BB61-B11DD8750176}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Databasteknik.Application", "Databasteknik.Application\Databasteknik.Application.csproj", "{D703BDEA-A749-41B1-B904-9036F3508D8A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Databasteknik.Infrastructure", "Databasteknik.Infrastructure\Databasteknik.Infrastructure.csproj", "{F2F0F86D-9D57-410E-AC02-63540A7ECD0A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Databasteknik.Presentation", "Databasteknik.Presentation\Databasteknik.Presentation.csproj", "{D0C2457D-8BE9-4336-8FFB-1078219ED351}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Databasteknik.Tests", "Databasteknik.Tests\Databasteknik.Tests.csproj", "{9CFD5720-F20B-4E5C-9F14-FBCB1E252EDB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8DCA56A1-3C20-4C99-BB61-B11DD8750176}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8DCA56A1-3C20-4C99-BB61-B11DD8750176}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8DCA56A1-3C20-4C99-BB61-B11DD8750176}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8DCA56A1-3C20-4C99-BB61-B11DD8750176}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D703BDEA-A749-41B1-B904-9036F3508D8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D703BDEA-A749-41B1-B904-9036F3508D8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D703BDEA-A749-41B1-B904-9036F3508D8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D703BDEA-A749-41B1-B904-9036F3508D8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2F0F86D-9D57-410E-AC02-63540A7ECD0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2F0F86D-9D57-410E-AC02-63540A7ECD0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2F0F86D-9D57-410E-AC02-63540A7ECD0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2F0F86D-9D57-410E-AC02-63540A7ECD0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0C2457D-8BE9-4336-8FFB-1078219ED351}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0C2457D-8BE9-4336-8FFB-1078219ED351}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0C2457D-8BE9-4336-8FFB-1078219ED351}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0C2457D-8BE9-4336-8FFB-1078219ED351}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CFD5720-F20B-4E5C-9F14-FBCB1E252EDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CFD5720-F20B-4E5C-9F14-FBCB1E252EDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CFD5720-F20B-4E5C-9F14-FBCB1E252EDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CFD5720-F20B-4E5C-9F14-FBCB1E252EDB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
