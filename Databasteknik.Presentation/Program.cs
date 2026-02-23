@@ -28,7 +28,7 @@ using (var scope = app.Services.CreateScope())
 
 app.MapGet("/", () => Results.Ok(new { status = "ok" }));
 
-// Courses CRUD (basic)
+// -------------------- Courses CRUD (service-based) --------------------
 app.MapGet("/api/courses", async (ICourseService svc, CancellationToken ct) =>
 {
     var items = await svc.GetAllAsync(ct);
@@ -54,6 +54,175 @@ app.MapDelete("/api/courses/{id:guid}", async (Guid id, ICourseService svc, Canc
 {
     var ok = await svc.DeleteAsync(id, ct);
     return ok ? Results.NoContent() : Results.NotFound();
+});
+
+// -------------------- Participants CRUD (db-based) --------------------
+app.MapGet("/api/participants", async (AppDbContext db, CancellationToken ct) =>
+{
+    var items = await db.Participants.AsNoTracking().ToListAsync(ct);
+    return Results.Ok(items);
+});
+
+app.MapGet("/api/participants/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
+{
+    var item = await db.Participants.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+    return item is null ? Results.NotFound() : Results.Ok(item);
+});
+
+app.MapPost("/api/participants", async (AppDbContext db, Participant participant, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(participant.Email))
+        return Results.BadRequest("Email is required.");
+
+    db.Participants.Add(participant);
+    await db.SaveChangesAsync(ct);
+
+    return Results.Created($"/api/participants/{participant.Id}", participant);
+});
+
+app.MapDelete("/api/participants/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
+{
+    var item = await db.Participants.FindAsync(new object[] { id }, ct);
+    if (item is null) return Results.NotFound();
+
+    db.Participants.Remove(item);
+    await db.SaveChangesAsync(ct);
+
+    return Results.NoContent();
+});
+
+// -------------------- Teachers CRUD (db-based) --------------------
+app.MapGet("/api/teachers", async (AppDbContext db, CancellationToken ct) =>
+{
+    var items = await db.Teachers.AsNoTracking().ToListAsync(ct);
+    return Results.Ok(items);
+});
+
+app.MapGet("/api/teachers/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
+{
+    var item = await db.Teachers.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+    return item is null ? Results.NotFound() : Results.Ok(item);
+});
+
+app.MapPost("/api/teachers", async (AppDbContext db, Teacher teacher, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(teacher.Email))
+        return Results.BadRequest("Email is required.");
+
+    db.Teachers.Add(teacher);
+    await db.SaveChangesAsync(ct);
+
+    return Results.Created($"/api/teachers/{teacher.Id}", teacher);
+});
+
+app.MapDelete("/api/teachers/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
+{
+    var item = await db.Teachers.FindAsync(new object[] { id }, ct);
+    if (item is null) return Results.NotFound();
+
+    db.Teachers.Remove(item);
+    await db.SaveChangesAsync(ct);
+
+    return Results.NoContent();
+});
+
+// -------------------- CourseOccasions CRUD --------------------
+app.MapGet("/api/occasions", async (AppDbContext db, CancellationToken ct) =>
+{
+    var items = await db.CourseOccasions
+        .AsNoTracking()
+        .Include(x => x.Course)
+        .Include(x => x.Teacher)
+        .ToListAsync(ct);
+
+    return Results.Ok(items);
+});
+
+app.MapGet("/api/occasions/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
+{
+    var item = await db.CourseOccasions
+        .AsNoTracking()
+        .Include(x => x.Course)
+        .Include(x => x.Teacher)
+        .FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    return item is null ? Results.NotFound() : Results.Ok(item);
+});
+
+app.MapPost("/api/occasions", async (AppDbContext db, CourseOccasion input, CancellationToken ct) =>
+{
+    var courseExists = await db.Courses.AnyAsync(c => c.Id == input.CourseId, ct);
+    if (!courseExists) return Results.BadRequest("CourseId not found.");
+
+    var teacherExists = await db.Teachers.AnyAsync(t => t.Id == input.TeacherId, ct);
+    if (!teacherExists) return Results.BadRequest("TeacherId not found.");
+
+    if (input.EndDate < input.StartDate)
+        return Results.BadRequest("EndDate must be >= StartDate.");
+
+    db.CourseOccasions.Add(input);
+    await db.SaveChangesAsync(ct);
+
+    return Results.Created($"/api/occasions/{input.Id}", input);
+});
+
+app.MapDelete("/api/occasions/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
+{
+    var item = await db.CourseOccasions.FindAsync(new object[] { id }, ct);
+    if (item is null) return Results.NotFound();
+
+    db.CourseOccasions.Remove(item);
+    await db.SaveChangesAsync(ct);
+
+    return Results.NoContent();
+});
+
+
+// -------------------- Enrollments (Registrations) --------------------
+app.MapGet("/api/enrollments", async (AppDbContext db, CancellationToken ct) =>
+{
+    var items = await db.Enrollments
+        .AsNoTracking()
+        .Include(x => x.Participant)
+        .Include(x => x.CourseOccasion)
+            .ThenInclude(o => o.Course)
+        .ToListAsync(ct);
+
+    return Results.Ok(items);
+});
+
+app.MapPost("/api/enrollments", async (AppDbContext db, Enrollment input, CancellationToken ct) =>
+{
+    var participantExists = await db.Participants.AnyAsync(p => p.Id == input.ParticipantId, ct);
+    if (!participantExists) return Results.BadRequest("ParticipantId not found.");
+
+    var occasionExists = await db.CourseOccasions.AnyAsync(o => o.Id == input.CourseOccasionId, ct);
+    if (!occasionExists) return Results.BadRequest("CourseOccasionId not found.");
+
+    // prevent duplicate enrollment
+    var already = await db.Enrollments.AnyAsync(e =>
+        e.ParticipantId == input.ParticipantId &&
+        e.CourseOccasionId == input.CourseOccasionId, ct);
+
+    if (already) return Results.Conflict("Participant is already enrolled for this occasion.");
+
+    input.EnrolledAt = DateTime.UtcNow;
+
+    db.Enrollments.Add(input);
+    await db.SaveChangesAsync(ct);
+
+    return Results.Created($"/api/enrollments/{input.Id}", input);
+});
+
+app.MapDelete("/api/enrollments/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
+{
+    var item = await db.Enrollments.FindAsync(new object[] { id }, ct);
+    if (item is null) return Results.NotFound();
+
+    db.Enrollments.Remove(item);
+    await db.SaveChangesAsync(ct);
+
+    return Results.NoContent();
 });
 
 app.Run();
