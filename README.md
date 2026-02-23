@@ -1,3 +1,5 @@
+https://github.com/bondarenkovita35-afk/Databasteknik-Vitaliia-Sivakova
+
 # Databasteknik (net9 + EF Core 9)
 
 Backend for an education company: courses, course occasions, teachers, participants and enrollments.
