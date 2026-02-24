@@ -234,28 +234,20 @@ app.MapGet("/api/enrollments", async (AppDbContext db, CancellationToken ct) =>
 
     return Results.Ok(items);
 });
-
-app.MapPost("/api/enrollments", async (AppDbContext db, Enrollment input, CancellationToken ct) =>
+app.MapPost("/api/enrollments", async (Databasteknik.Application.Contracts.IEnrollmentService svc, Enrollment input, CancellationToken ct) =>
 {
-    var participantExists = await db.Participants.AnyAsync(p => p.Id == input.ParticipantId, ct);
-    if (!participantExists) return Results.BadRequest("ParticipantId not found.");
+    var result = await svc.EnrollAsync(input.ParticipantId, input.CourseOccasionId, ct);
 
-    var occasionExists = await db.CourseOccasions.AnyAsync(o => o.Id == input.CourseOccasionId, ct);
-    if (!occasionExists) return Results.BadRequest("CourseOccasionId not found.");
+    if (!result.Success)
+    {
+        if (result.Error?.Contains("already enrolled") == true) return Results.Conflict(result.Error);
+        if (result.Error?.Contains("not found") == true) return Results.BadRequest(result.Error);
+        if (result.Error?.Contains("full") == true) return Results.Conflict(result.Error);
 
-    // prevent duplicate enrollment
-    var already = await db.Enrollments.AnyAsync(e =>
-        e.ParticipantId == input.ParticipantId &&
-        e.CourseOccasionId == input.CourseOccasionId, ct);
+        return Results.BadRequest(result.Error ?? "Enrollment failed.");
+    }
 
-    if (already) return Results.Conflict("Participant is already enrolled for this occasion.");
-
-    input.EnrolledAt = DateTime.UtcNow;
-
-    db.Enrollments.Add(input);
-    await db.SaveChangesAsync(ct);
-
-    return Results.Created($"/api/enrollments/{input.Id}", input);
+    return Results.Created($"/api/enrollments/{result.EnrollmentId}", new { id = result.EnrollmentId });
 });
 
 app.MapDelete("/api/enrollments/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
