@@ -1,12 +1,13 @@
 using Databasteknik.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Databasteknik.Infrastructure.Reporting;
 
 namespace Databasteknik.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
+    internal DbSet<CourseEnrollmentReportRow> CourseEnrollmentReportRows => Set<CourseEnrollmentReportRow>();
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<Teacher> Teachers => Set<Teacher>();
     public DbSet<Participant> Participants => Set<Participant>();
@@ -40,5 +41,12 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Enrollment>()
             .HasIndex(e => new { e.CourseOccasionId, e.ParticipantId })
             .IsUnique();
+
+        modelBuilder.Entity<CourseEnrollmentReportRow>(b =>
+        {
+            b.HasNoKey();
+            b.ToView(null);
+        });
+
     }
 }
