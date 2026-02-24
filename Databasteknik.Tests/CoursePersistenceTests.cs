@@ -25,4 +25,30 @@ public class CoursePersistenceTests
         Assert.NotNull(loaded);
         Assert.Equal("DevOps Basics", loaded!.Title);
     }
+
+    [Fact]
+    public async Task Cannot_create_course_without_title()
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var db = new AppDbContext(options);
+
+        var course = new Course
+        {
+            Title = "",   // inte tom titel
+            Description = "Test",
+            Credits = 5
+        };
+
+        db.Courses.Add(course);
+
+        await db.SaveChangesAsync();
+
+        var loaded = await db.Courses.FirstOrDefaultAsync(c => c.Id == course.Id);
+
+       
+        Assert.True(string.IsNullOrWhiteSpace(loaded!.Title));
+    }
 }
