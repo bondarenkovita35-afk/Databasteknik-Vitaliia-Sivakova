@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<IReportsService, ReportsService>();
         var cs = config.GetConnectionString("DefaultConnection") ?? "Data Source=databasteknik.db";
         services.AddDbContext<AppDbContext>(o => o.UseSqlite(cs));
+        services.AddScoped<IEnrollmentService, EnrollmentService>();
 
         services.AddScoped<ICourseService, CourseService>();
 

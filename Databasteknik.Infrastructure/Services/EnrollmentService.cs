@@ -16,7 +16,7 @@ internal sealed class EnrollmentService : IEnrollmentService
 
     public async Task<EnrollResult> EnrollAsync(Guid participantId, Guid courseOccasionId, CancellationToken ct)
     {
-        // Транзакция: все проверки + insert должны быть атомарны
+        
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
         try
@@ -32,7 +32,7 @@ internal sealed class EnrollmentService : IEnrollmentService
             if (occasion is null)
                 return EnrollResult.Fail("CourseOccasionId not found.");
 
-            // Проверка дубликата
+      
             var already = await _db.Enrollments.AnyAsync(e =>
                 e.ParticipantId == participantId &&
                 e.CourseOccasionId == courseOccasionId, ct);
@@ -40,7 +40,7 @@ internal sealed class EnrollmentService : IEnrollmentService
             if (already)
                 return EnrollResult.Fail("Participant is already enrolled for this occasion.");
 
-            // Проверка capacity (места)
+            
             var usedSeats = await _db.Enrollments.CountAsync(e => e.CourseOccasionId == courseOccasionId, ct);
 
             if (occasion.Capacity > 0 && usedSeats >= occasion.Capacity)
