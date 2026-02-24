@@ -3,11 +3,13 @@ using Databasteknik.Domain.Entities;
 using Databasteknik.Infrastructure;
 using Databasteknik.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddCors(options =>
 {
@@ -41,9 +43,19 @@ using (var scope = app.Services.CreateScope())
 app.MapGet("/", () => Results.Ok(new { status = "ok" }));
 
 // -------------------- Courses CRUD (service-based) --------------------
-app.MapGet("/api/courses", async (ICourseService svc, CancellationToken ct) =>
+app.MapGet("/api/courses", async (ICourseService svc, IMemoryCache cache, CancellationToken ct) =>
 {
-    var items = await svc.GetAllAsync(ct);
+    const string key = "courses:all";
+
+    var items = await cache.GetOrCreateAsync(key, async entry =>
+    {
+        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
+        entry.SlidingExpiration = TimeSpan.FromSeconds(10);
+
+        var data = await svc.GetAllAsync(ct);
+        return data;
+    });
+
     return Results.Ok(items);
 });
 
@@ -53,25 +65,40 @@ app.MapGet("/api/courses/{id:guid}", async (Guid id, ICourseService svc, Cancell
     return item is null ? Results.NotFound() : Results.Ok(item);
 });
 
-app.MapPost("/api/courses", async (Course input, ICourseService svc, CancellationToken ct) =>
+app.MapPost("/api/courses", async (Course input, ICourseService svc, IMemoryCache cache, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(input.Title))
         return Results.BadRequest("Title is required.");
 
     var created = await svc.CreateAsync(input, ct);
+
+    cache.Remove("courses:all");
+
     return Results.Created($"/api/courses/{created.Id}", created);
 });
 
-app.MapDelete("/api/courses/{id:guid}", async (Guid id, ICourseService svc, CancellationToken ct) =>
+app.MapDelete("/api/courses/{id:guid}", async (Guid id, ICourseService svc, IMemoryCache cache, CancellationToken ct) =>
 {
     var ok = await svc.DeleteAsync(id, ct);
+
+    if (ok) cache.Remove("courses:all");
+
     return ok ? Results.NoContent() : Results.NotFound();
 });
 
 // -------------------- Participants CRUD (db-based) --------------------
-app.MapGet("/api/participants", async (AppDbContext db, CancellationToken ct) =>
+app.MapGet("/api/participants", async (AppDbContext db, IMemoryCache cache, CancellationToken ct) =>
 {
-    var items = await db.Participants.AsNoTracking().ToListAsync(ct);
+    const string key = "participants:all";
+
+    var items = await cache.GetOrCreateAsync(key, async entry =>
+    {
+        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
+        entry.SlidingExpiration = TimeSpan.FromSeconds(10);
+
+        return await db.Participants.AsNoTracking().ToListAsync(ct);
+    });
+
     return Results.Ok(items);
 });
 
@@ -81,7 +108,7 @@ app.MapGet("/api/participants/{id:guid}", async (AppDbContext db, Guid id, Cance
     return item is null ? Results.NotFound() : Results.Ok(item);
 });
 
-app.MapPost("/api/participants", async (AppDbContext db, Participant participant, CancellationToken ct) =>
+app.MapPost("/api/participants", async (AppDbContext db, IMemoryCache cache, Participant participant, CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(participant.Email))
         return Results.BadRequest("Email is required.");
@@ -89,16 +116,21 @@ app.MapPost("/api/participants", async (AppDbContext db, Participant participant
     db.Participants.Add(participant);
     await db.SaveChangesAsync(ct);
 
+    
+    cache.Remove("participants:all");
+
     return Results.Created($"/api/participants/{participant.Id}", participant);
 });
 
-app.MapDelete("/api/participants/{id:guid}", async (AppDbContext db, Guid id, CancellationToken ct) =>
+app.MapDelete("/api/participants/{id:guid}", async (AppDbContext db, IMemoryCache cache, Guid id, CancellationToken ct) =>
 {
     var item = await db.Participants.FindAsync(new object[] { id }, ct);
     if (item is null) return Results.NotFound();
 
     db.Participants.Remove(item);
     await db.SaveChangesAsync(ct);
+
+    cache.Remove("participants:all");
 
     return Results.NoContent();
 });
