@@ -237,4 +237,10 @@ app.MapDelete("/api/enrollments/{id:guid}", async (AppDbContext db, Guid id, Can
     return Results.NoContent();
 });
 
+app.MapGet("/api/reports/course-enrollments", async (int? min, Databasteknik.Application.Contracts.IReportsService svc, CancellationToken ct) =>
+{
+    var result = await svc.GetCourseEnrollmentsAsync(min ?? 0, ct);
+    return Results.Ok(result);
+});
+
 app.Run();
